@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .upload-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #result {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+
+        #result p {
+            margin: 0;
+            padding: 10px 0;
+        }
+
+        #result ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+
+        #result li {
+            list-style-type: disc;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Excel Analyzer</h1>
+        <div class="upload-container">
+            <label for="fileInput" class="upload-button">Upload Excel</label>
+            <input type="file" id="fileInput" style="display:none;">
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.2/xlsx.full.min.js"></script>
+    <script>
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: true });
+                    updateDates(jsonData);
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                alert('Please select an Excel file.');
+            }
+        }
+
+        function updateDates(data) {
+            const filteredData = data.filter(row => row.NO_OF_ROOMS1 < 10 && row.MARKET_CODE === 'Total');
+            const dates = filteredData.map(row => row.BUSINESS_DATE).filter((value, index, self) => self.indexOf(value) === index);
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+            if (dates.length > 0) {
+                const header = document.createElement('h3');
+                header.textContent = 'Dates where NO_OF_ROOMS1 < 10 in Total:';
+                resultDiv.appendChild(header);
+                const ul = document.createElement('ul');
+                dates.forEach(date => {
+                    const li = document.createElement('li');
+                    li.textContent = date;
+                    ul.appendChild(li);
+                });
+                resultDiv.appendChild(ul);
+            } else {
+                const message = document.createElement('p');
+                message.textContent = 'No dates found where NO_OF_ROOMS1 < 10 in Total.';
+                resultDiv.appendChild(message);
+            }
+        }
+    </script>
+</body>
+</html>
